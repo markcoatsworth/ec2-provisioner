@@ -1,0 +1,8 @@
+executable	= ec2-provisioner.py
+output		= ec2-provisioner.out
+error		= ec2-provisioner.err
+log		= ec2-provisioner.log
+universe 	= local
++WantIOProxy 	= true
+
+queue
