@@ -57,10 +57,12 @@ class EC2Provisioner:
 
 	def change_state(self, new_state):
 		self.provisioner_state = new_state
-		qedit_cmd = "condor_qedit -debug {}.{} ProvisionerState {}".format(self.cluster_id, self.proc_id, new_state)
+
+		# TODO: Is there a less ugly way to update the job ad?
+		qedit_cmd = "condor_qedit -debug {}.{} ProvisionerState \"\\\"{}\\\"\"".format(self.cluster_id, self.proc_id, new_state)
 		qedit_process = subprocess.Popen(qedit_cmd, shell=True)
 	
-		qedit_cmd = "condor_qedit -debug {}.{} ProvisionerResourceID {}".format(self.cluster_id, self.proc_id, self.resource_id)
+		qedit_cmd = "condor_qedit -debug {}.{} ProvisionerResourceID \"\\\"{}\\\"\"".format(self.cluster_id, self.proc_id, self.resource_id)
 		qedit_process = subprocess.Popen(qedit_cmd, shell=True)
 	
 		# TODO: Replace with real event logging via bindings	

@@ -1,8 +1,7 @@
-executable	= ec2-provisioner.py
-output		= ec2-provisioner.out
-error		= ec2-provisioner.err
-log		= ec2-provisioner.log
-universe 	= local
-+WantIOProxy 	= true
+executable = ec2-provisioner.py
+output = ec2-provisioner.out
+error = ec2-provisioner.err
+universe = local
+environment = "PYTHONPATH=/condor/release_dir/lib/python3 CONDOR_CONFIG=/condor/release_dir/etc/condor_config PATH=/usr/local/bin:/usr/bin:/condor/release_dir/bin:/condor/release_dir/sbin"
 
 queue
