@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-from __future__ import print_function
-
 import argparse
 import enum
 import htcondor
@@ -12,15 +10,10 @@ import subprocess
 import sys
 import time
 
+from htcondor import ProvisionerState
+
 PROVISIONER_SUCCESS = 0
 PROVISIONER_FAILURE = 1
-
-class ProvisionerState(enum.Enum):
-	NONE = "NONE"
-	PROVISIONING_ACTIVE = "PROVISIONING ACTIVE"
-	PROVISIONING_COMPLETE = "PROVISIONING COMPLETE"
-	DEPROVISIONING_ACTIVE = "DEPROVISIONING ACTIVE"
-	DEPROVISIONING_COMPLETE = "DEPROVISIONING COMPLETE"
 
 class EC2Provisioner:
 
@@ -32,7 +25,7 @@ class EC2Provisioner:
 		print("Initializing EC2Provisioner object")
 		self.resource_id = name + str(random.randint(1, 100000))
 		self.resource_expiration = expiration
-		self.provisioner_state = ProvisionerState.NONE
+		self.provisioner_state = ProvisionerState.New
 		
 		# If we cannot lookup the cluster ID and proc ID, exit immediately
 		self.lookup_jobid()
@@ -128,7 +121,7 @@ def main():
 
 	# Parse input arguments
 	parser = argparse.ArgumentParser(description='EC2 resource provisioner')
-	parser.add_argument('-state', action="store", dest="state", default=ProvisionerState.NONE)
+	parser.add_argument('-state', action="store", dest="state", default=ProvisionerState.New)
 	parser.add_argument('-resource_id', action="store", dest="resouce_id", default="")
 	parser.add_argument('-expiration', action="store", dest="expiration", type=int, default=0)
 	args = parser.parse_args()
@@ -141,18 +134,18 @@ def main():
 	
 	# Provision EC2 resources.
 	print("Current provisioner state is {}".format(ec2.provisioner_state))	
-	if ec2.provisioner_state == ProvisionerState.NONE:
+	if ec2.provisioner_state == ProvisionerState.New:
 		print("About to start provisioning routine")
-		ec2.change_state(ProvisionerState.PROVISIONING_ACTIVE)
+		ec2.change_state(ProvisionerState.ProvisioningStarted)
 		provision_success = ec2.provision()
 		if provision_success is False:
 			print("Failed to provision resources, aborting.")
 			exit(PROVISIONER_FAILURE)
-		ec2.change_state(ProvisionerState.PROVISIONING_COMPLETE)
+		ec2.change_state(ProvisionerState.ProvisioningComplete)
 
 	# Now to go to sleep for some time, while waiting for work to happen on provisioned resources
 	print("Finished provisioning, now state is {}".format(ec2.provisioner_state))
-	if ec2.provisioner_state == ProvisionerState.PROVISIONING_COMPLETE:
+	if ec2.provisioner_state == ProvisionerState.ProvisioningComplete:
 		print("Now waiting for deadline at expiration = {}, current time = {}".format(ec2.resource_expiration, time.time()))
 		while time.time() < ec2.resource_expiration:
 			#print("Waiting for expiration, time.time() = " + str(time.time()) + ", ec2.resource_expiration = " + str(ec2.resource_expiration))
@@ -160,17 +153,17 @@ def main():
 
 	# Deprovision EC2 resources. 
 	print("Ready to deprovision, now state is {}".format(ec2.provisioner_state))
-	if ec2.provisioner_state == ProvisionerState.PROVISIONING_COMPLETE:
-		ec2.change_state(ProvisionerState.DEPROVISIONING_ACTIVE)
+	if ec2.provisioner_state == ProvisionerState.ProvisioningComplete:
+		ec2.change_state(ProvisionerState.DeprovisioningStarted)
 		deprovision_success = ec2.deprovision()
 		if deprovision_success is False:
 			print("Failed to deprovision resources, exiting.\nPlease deprovision these resources manually to avoid incurring extra costs.")
 			exit(PROVISIONER_FAILURE)
-		ec2.change_state(ProvisionerState.DEPROVISIONING_COMPLETE)
+		ec2.change_state(ProvisionerState.DeprovisioningComplete)
 		
 	# All done
 	print("All done, now state is {}".format(ec2.provisioner_state))
-	if ec2.provisioner_state is ProvisionerState.DEPROVISIONING_COMPLETE:
+	if ec2.provisioner_state is ProvisionerState.DeprovisioningComplete:
 		print("Looks like everything worked correctly. Exiting.")
 		exit(PROVISIONER_SUCCESS)
 
