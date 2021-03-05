@@ -50,9 +50,9 @@ class EC2Provisioner:
 
 	def change_state(self, new_state):
 		self.provisioner_state = new_state
-
+		
 		# TODO: Is there a less ugly way to update the job ad?
-		qedit_cmd = "condor_qedit -debug {}.{} ProvisionerState \"\\\"{}\\\"\"".format(self.cluster_id, self.proc_id, new_state)
+		qedit_cmd = "condor_qedit -debug {}.{} ProvisionerState {}".format(self.cluster_id, self.proc_id, new_state.real)
 		qedit_process = subprocess.Popen(qedit_cmd, shell=True)
 	
 		qedit_cmd = "condor_qedit -debug {}.{} ProvisionerResourceID \"\\\"{}\\\"\"".format(self.cluster_id, self.proc_id, self.resource_id)
@@ -125,7 +125,7 @@ def main():
 	parser.add_argument('-resource_id', action="store", dest="resouce_id", default="")
 	parser.add_argument('-expiration', action="store", dest="expiration", type=int, default=0)
 	args = parser.parse_args()
-	
+
 	# Setup an initialize the provisioner class object
 	ec2 = EC2Provisioner()
 	ec2.provisioner_state = args.state
